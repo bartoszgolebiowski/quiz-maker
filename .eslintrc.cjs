@@ -5,8 +5,13 @@
  */
 
 /** @type {import('eslint').Linter.Config} */
+
 module.exports = {
   root: true,
+  rules: {
+    "import/no-unresolved": "off",
+    "react/prop-types": "off",
+  },
   parserOptions: {
     ecmaVersion: "latest",
     sourceType: "module",
@@ -19,7 +24,6 @@ module.exports = {
     commonjs: true,
     es6: true,
   },
-  ignorePatterns: ["!**/.server", "!**/.client"],
 
   // Base config
   extends: ["eslint:recommended"],
@@ -44,9 +48,6 @@ module.exports = {
           { name: "Link", linkAttribute: "to" },
           { name: "NavLink", linkAttribute: "to" },
         ],
-        "import/resolver": {
-          typescript: {},
-        },
       },
     },
 

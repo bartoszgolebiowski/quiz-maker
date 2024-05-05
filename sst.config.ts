@@ -1,5 +1,5 @@
 import type { SSTConfig } from "sst";
-import { RemixSite, Cognito } from "sst/constructs";
+import { RemixSite, Cognito, Bucket, Table } from "sst/constructs";
 
 export default {
     config(_input) {
@@ -11,18 +11,43 @@ export default {
     },
     stacks(app) {
         app.stack(function Site({ stack }) {
-            const cognitoId = "Auth"
-            const auth = new Cognito(stack, cognitoId, {
+            const auth = new Cognito(stack, "auth", {
                 login: ['email'],
             });
 
-            const site = new RemixSite(stack, "site");
+            const table = new Table(stack, "table", {
+                fields: {
+                    userId: "string",
+                    id: "string",
+                    title: "string",
+                    version: "string",
+                    description: "string",
+                },
+                primaryIndex: { partitionKey: "userId", sortKey: "id" },
+                globalIndexes: {
+                    titleVersion: { partitionKey: "id", sortKey: "version" },
+                },
+            });
+
+            const bucket = new Bucket(stack, "bucket", {
+                cdk: {
+                    bucket: {
+                        versioned: true,
+                    }
+                }
+            })
+
+            const site = new RemixSite(stack, "site", {
+                permissions: [bucket, table]
+            });
 
             const env = {
                 Region: app.region,
                 SiteUrl: site.url,
-                CognitoDomain: `${app.stage}-${app.name}-${cognitoId}.auth.${app.region}.amazoncognito.com`,
+                CognitoDomain: `${app.stage}-${app.name}-auth.auth.${app.region}.amazoncognito.com`,
                 CognitoUserPoolClientId: auth.userPoolClientId,
+                BucketName: bucket.bucketName,
+                TableName: table.tableName,
             }
 
             stack.addOutputs(env);

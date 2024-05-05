@@ -1,11 +1,13 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
-import { authLoader } from "../auth.server";
+import { loginRequiredLoader } from "../auth.server";
 import { useLoaderData } from "@remix-run/react";
 
 export async function loader(args: LoaderFunctionArgs) {
-  return authLoader(args, () => {
+  const user = await loginRequiredLoader(args);
+  if (user) {
     return { isLoggedIn: true };
-  });
+  }
+  return { isLoggedIn: false };
 }
 
 export default function Index() {

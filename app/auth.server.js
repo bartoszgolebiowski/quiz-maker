@@ -1,19 +1,10 @@
 /* eslint-disable no-undef */
 import { redirect, createCookie } from "@remix-run/node";
+import { env } from "./env";
 
-const sessionSecret = process.env.SESSION_SECRET;
-const cognitoDomain = process.env.COGNITO_DOMAIN;
-const clientId = process.env.COGNITO_USER_POOL_CLIENT_ID;
-
-if (!sessionSecret) {
-  throw new Error("SESSION_SECRET must be set");
-}
-if (!cognitoDomain) {
-  throw new Error("COGNITO_DOMAIN must be set");
-}
-if (!clientId) {
-  throw new Error("CLIENT_ID must be set");
-}
+const sessionSecret = env.SESSION_SECRET;
+const cognitoDomain = env.COGNITO_DOMAIN;
+const clientId = env.COGNITO_USER_POOL_CLIENT_ID;
 
 const cookieSettings = {
   maxAge: 60 * 60 * 30,
@@ -59,6 +50,14 @@ async function authenticate(request) {
           refresh_token,
         })
       );
+
+      const state = url.searchParams.get("state");
+      if (state) {
+        const finalRedirectTo = decodeURIComponent(state);
+        console.log("finalRedirectTo :>> ", finalRedirectTo);
+        return [redirect(finalRedirectTo, { headers }), null];
+      }
+      return [null, user];
     }
   }
   //The url does not have a code, so this is the first time we are hitting the login page
@@ -96,16 +95,16 @@ async function authenticate(request) {
           if (state) {
             const finalRedirectTo = decodeURIComponent(state);
             console.log("finalRedirectTo :>> ", finalRedirectTo);
-            return redirect(finalRedirectTo, { headers });
+            return [redirect(finalRedirectTo, { headers }), null];
           }
-          return null;
+          return [null, user];
         }
       }
     }
     if (!user) {
       //if we still have no user then send them to the cognito login page
       const uri = `http://${cognitoDomain}/login?client_id=${clientId}&response_type=code&scope=email+openid&redirect_uri=${redirectUri}&state=${currentLocation}`;
-      return redirect(uri);
+      return [redirect(uri), null];
     }
   }
   if (user) {
@@ -116,7 +115,7 @@ async function authenticate(request) {
       console.log("finalRedirectTo :>> ", finalRedirectTo);
       return redirect(finalRedirectTo, { headers });
     }
-    return null;
+    return [null, user];
   }
 
   throw new Error("User not authenticated");
@@ -214,15 +213,33 @@ async function refreshAccessToken(request) {
 }
 
 /**
-
- * @param {import('@remix-run/node').LoaderFunctionArgs} input - The input arguments.
- * @param {import('@remix-run/node').LoaderFunction} callback - The callback function.
- * @returns {ReturnType<import('@remix-run/node').LoaderFunction>} - The redirect URI or the result of the callback.
+ * @typedef {Object} User
+ * @property {string} sub
+ * @property {string} email - The user's name.
+ * @property {string} username - The user's email address.
  */
-export const authLoader = async (input, callback) => {
-  const redirectUri = await authenticate(input.request);
+
+/**
+ * @param {import('@remix-run/node').LoaderFunctionArgs} input - The input arguments.
+ * @returns {Promise<User>} - The redirect URI or the result of the callback.
+ */
+export const loginRequiredLoader = async (input) => {
+  const [redirectUri, user] = await authenticate(input.request);
+  if (redirectUri) {
+    throw redirectUri;
+  }
+  return user;
+};
+
+/**
+ * @param {import('@remix-run/node').ActionFunctionArgs} input - The input arguments.
+ * @param {(user: User) => ReturnType<import('@remix-run/node').ActionFunction>} callback - The callback function.
+ * @returns {ReturnType<import('@remix-run/node').ActionFunction>} - The redirect URI or the result of the callback.
+ */
+export const authAction = async (input, callback) => {
+  const [redirectUri, user] = await authenticate(input.request);
   if (redirectUri) {
     return redirectUri;
   }
-  return callback(input);
+  return callback(user);
 };

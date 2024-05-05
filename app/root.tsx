@@ -1,4 +1,3 @@
-import { cssBundleHref } from "@remix-run/css-bundle";
 import type { LinksFunction } from "@remix-run/node";
 import {
   Links,
@@ -8,10 +7,10 @@ import {
   Scripts,
   ScrollRestoration,
 } from "@remix-run/react";
+import styles from "./globals.css";
+import { Toaster } from "./components/ui/sonner";
 
-export const links: LinksFunction = () => [
-  ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
-];
+export const links: LinksFunction = () => [{ rel: "stylesheet", href: styles }];
 
 export default function App() {
   return (
@@ -24,6 +23,7 @@ export default function App() {
       </head>
       <body>
         <Outlet />
+        <Toaster expand richColors position="bottom-left" />
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
