@@ -10,7 +10,7 @@ import GenericCardServerrErrors from "~/templates/GenericCardServerrErrors";
 import EditTemplate from "~/templates/EditTemplate";
 import { error400, error401, formatErrors } from "~/utils/errors";
 import { authAction, loginRequiredLoader } from "~/auth.server";
-import { templateClient } from "~/db/client";
+import { templateRepository } from "~/db/client";
 import { createTemplateSchema } from "~/templates/validation";
 
 export const meta: MetaFunction = () => {
@@ -80,11 +80,11 @@ const actionCreate = async (args: ActionFunctionArgs, form: FormData) => {
       throw error400("Invalid form input", formattedErrors);
     }
 
-    const templateId = await templateClient.createTemplate(
+    await templateRepository.createTemplate(
       input.data,
       user.username
     );
 
-    return redirect(`/templates`);
+    return redirect(`/template`);
   });
 };

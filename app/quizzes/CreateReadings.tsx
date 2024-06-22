@@ -23,7 +23,7 @@ import TextAreaControll from "~/components/input/TextAreaControll";
 
 type Props = {
   templates: {
-    id: string;
+    templateId: string;
     title: string;
   }[];
 };
@@ -58,10 +58,7 @@ const CreateReadings = (props: Props) => {
           <DialogHeader>
             <DialogTitle>Create Quiz</DialogTitle>
           </DialogHeader>
-          <fetcher.Form
-            method="post"
-            id={formId}
-          >
+          <fetcher.Form method="post" id={formId}>
             <input type="hidden" name="action" value="create" />
             <SelectControll
               name="templateId"
@@ -70,7 +67,10 @@ const CreateReadings = (props: Props) => {
               label="Course *"
             >
               {templates.map((template) => (
-                <SelectItem key={template.id} value={String(template.id)}>
+                <SelectItem
+                  key={template.templateId}
+                  value={template.templateId}
+                >
                   {template.title}
                 </SelectItem>
               ))}

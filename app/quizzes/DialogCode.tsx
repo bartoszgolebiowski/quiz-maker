@@ -25,8 +25,13 @@ type Props = {
   code: string;
 };
 
-const link = (origin: string, code: string) => {
-  return `${origin}/join?code=${code}`;
+const link = (code: string) => {
+  return `/join?code=${code}`;
+};
+
+const linkExternal = (code: string) => {
+  const currentUrl = window.location.origin; // Get the current URL
+  return `${currentUrl}/join?code=${code}`;
 };
 
 const DialogCode = (props: Props) => {
@@ -34,8 +39,7 @@ const DialogCode = (props: Props) => {
 
   const copy = () => {
     if (!code) return;
-    const origin = window.location.origin;
-    navigator.clipboard.writeText(link(origin, code));
+    navigator.clipboard.writeText(linkExternal(code));
   };
 
   if (!code) return null;
@@ -67,9 +71,8 @@ const DialogCode = (props: Props) => {
             </DialogDescription>
           </DialogHeader>
           <div className="mx-auto">
-            <Link to={link(origin, code)}>
-              {/* @ts-expect-error issue with library */}
-              <QRCode.QRCode value={link(origin, code.code)} />
+            <Link to={link(code)}>
+              <QRCode value={link(code)} />
             </Link>
           </div>
           <div className="grid grid-cols-6 gap-4">

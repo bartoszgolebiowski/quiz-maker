@@ -8,8 +8,8 @@ import { error404, error500 } from '~/utils/errors';
 
 export class TemplateRepository {
     constructor(
-        private tableNameRead: string,
-        private tableNameWrite: string,
+        private activeTemplatesTableName: string,
+        private templatesTableName: string,
         private s3Bucket: string,
         private dynamodbClient: DynamoDBClient,
         private s3Client: S3Client
@@ -17,7 +17,7 @@ export class TemplateRepository {
 
     async getTemplatesByUserId(userId: string) {
         const command = new QueryCommand({
-            TableName: this.tableNameRead,
+            TableName: this.activeTemplatesTableName,
             KeyConditionExpression: "userId = :pk",
             ExpressionAttributeValues: {
                 ":pk": { S: userId },
@@ -36,7 +36,27 @@ export class TemplateRepository {
         return templateListSchema.parse(
             results.Items.map((item) => unmarshall(item))
         )
+    }
 
+    async getCurrentTemplateVersion(userId: string, templateId: string) {
+        let s3Response;
+        try {
+            const command = new GetObjectCommand({
+                Bucket: this.s3Bucket,
+                Key: `${userId}/templates/${templateId}.json`,
+            });
+            s3Response = await this.s3Client.send(command);
+        } catch (error) {
+            console.error("S3 client failed to get object", error)
+            throw error500("S3 client failed to get object");
+        }
+
+        const versionId = s3Response.VersionId;
+        if (!versionId) {
+            console.error("S3 Versioning not enabled")
+            throw error500("S3 Versioning not enabled");
+        }
+        return versionId;
     }
 
     async getTemplatesByUserIdAndTemplateId(userId: string, templateId: string) {
@@ -103,7 +123,7 @@ export class TemplateRepository {
 
         try {
             const putItemWriteCommand = new PutItemCommand({
-                TableName: this.tableNameWrite,
+                TableName: this.templatesTableName,
                 Item: {
                     userId: { S: userId },
                     templateId: { S: templateId },
@@ -113,7 +133,7 @@ export class TemplateRepository {
                 },
             });
             const putItemReadCommand = new PutItemCommand({
-                TableName: this.tableNameRead,
+                TableName: this.activeTemplatesTableName,
                 Item: {
                     userId: { S: userId },
                     templateId: { S: templateId },
@@ -164,7 +184,7 @@ export class TemplateRepository {
 
         try {
             const putItemWriteCommand = new PutItemCommand({
-                TableName: this.tableNameWrite,
+                TableName: this.templatesTableName,
                 Item: {
                     userId: { S: userId },
                     templateId: { S: templateId },
@@ -174,7 +194,7 @@ export class TemplateRepository {
                 },
             });
             const putItemReadCommand = new PutItemCommand({
-                TableName: this.tableNameRead,
+                TableName: this.activeTemplatesTableName,
                 Item: {
                     userId: { S: userId },
                     templateId: { S: templateId },
@@ -191,5 +211,48 @@ export class TemplateRepository {
             console.error("DynamoDB client failed to send command", error)
             throw error500("DynamoDB client failed to send command");
         }
+    }
+
+    async getTemplateByIdAndVersion(userId: string, templateId: string, version: string) {
+        console.log({
+            userId,
+            templateId,
+            version
+
+        })
+         const command = new GetObjectCommand({
+                Bucket: this.s3Bucket,
+                Key: `${userId}/templates/${templateId}.json`,
+            });
+        let response;
+        try {
+            response = await this.s3Client.send(command);
+        } catch (error) {
+            console.error("S3 client failed to get object", error)
+            throw error500("S3 client failed to get object");
+        }
+
+        if (!response.Body) {
+            console.error("Body not found in response")
+            throw error404("Body not found in response");
+        }
+
+        const raw = await response.Body.transformToString();
+        let json;
+        try {
+            json = JSON.parse(raw);
+        } catch (error) {
+            console.error("Failed to parse template", error)
+            throw error500("Failed to parse template");
+        }
+
+        const template = templateEditDetailsSchema.parse(json);
+
+        if (!template) {
+            console.error("Template not found")
+            throw error404("Template not found");
+        }
+
+        return template;
     }
 }

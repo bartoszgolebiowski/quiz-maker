@@ -15,22 +15,24 @@ export default {
                 login: ['email'],
             });
 
-            const templateWriteTable = new Table(stack, "TemplateWriteTable", {
+            const templateTable = new Table(stack, "TemplateTable", {
                 fields: {
-                    templateId: "string",
+                    templateId: "string", // required att to link with specific template
+                    version: "string", // required att to link with specific template
                     userId: "string",
-                    version: "string",
+
                     title: "string",
                     description: "string",
                 },
                 primaryIndex: { partitionKey: "templateId", sortKey: "version" },
             });
 
-            const templateReadTable = new Table(stack, "TemplateReadTable", {
+            const activeTemplateTable = new Table(stack, "ActiveTemplateTable", {
                 fields: {
-                    templateId: "string",
-                    userId: "string",
-                    version: "string",
+                    templateId: "string", // required att to link with specific template
+                    version: "string", // required att to link with specific template
+                    userId: "string", // required att to link with specific template
+
                     title: "string",
                     description: "string",
                 },
@@ -40,49 +42,41 @@ export default {
             const quizTable = new Table(stack, "QuizTable", {
                 fields: {
                     templateId: "string", // required att to link with specific template
-                    quizId: "string",
-                    createdAt: "string",
                     version: "string", // required att to link with specific template
+                    userId: "string", // required att to link with specific template
+                    quizId: "string",
+                    code: "string",
+
+                    createdAt: "string",
                     title: "string",
                     description: "string",
+                    done: "string",
                 },
-                primaryIndex: { partitionKey: "templateId", sortKey: "createdAt" },
+                primaryIndex: { partitionKey: "userId", sortKey: "quizId" },
                 globalIndexes: {
                     quizId: { partitionKey: "quizId" },
                 },
             })
 
-            const isntancesTable = new Table(stack, "InstancesTable", {
-                fields: {
-                    templateId: "string", // required att to link with specific template
-                    quizId: "string",
-                    instanceId: "string",
-                    createdAt: "string",
-                    version: "string", // required att to link with specific template
-                },
-                primaryIndex: { partitionKey: "quizId", sortKey: "createdAt" }, // listing all instances of a quiz
-                globalIndexes: {
-                    instanceId: { partitionKey: "instanceId", }, // get instance by id
-                },
-            })
-
             const codeTable = new Table(stack, "CodeTable", {
                 fields: {
-                    instanceId: "string",
+                    quizId: "string",
                     code: "string",
-                    createdAt: "string",
                 },
-                primaryIndex: { partitionKey: "code", sortKey: "createdAt" },
+                primaryIndex: { partitionKey: "code" },
             })
 
             const answerTable = new Table(stack, "AnswerTable", {
                 fields: {
                     templateId: "string", // required att to link with specific template
-                    quizId: "string",
-                    instanceId: "string",
-                    answerId: "string",
-                    createdAt: "string",
                     version: "string", // required att to link with specific template
+                    userId: "string", // required att to link with specific template
+                    quizId: "string",
+                    answerId: "string",
+
+                    createdAt: "string",
+                    answer: "string",
+                    studentName: "string",
                 },
                 primaryIndex: { partitionKey: "quizId", sortKey: "createdAt" },
                 globalIndexes: {
@@ -99,8 +93,8 @@ export default {
             })
 
             const site = new RemixSite(stack, "site", {
-                bind: [auth, bucket, templateWriteTable, templateReadTable, quizTable, codeTable, isntancesTable, answerTable],
-                permissions: [bucket, templateWriteTable, templateReadTable, quizTable, codeTable, isntancesTable, answerTable]
+                bind: [auth, bucket, templateTable, activeTemplateTable, quizTable, codeTable, answerTable],
+                permissions: [bucket, templateTable, activeTemplateTable, quizTable, codeTable, answerTable]
             });
 
             const env = {
@@ -109,11 +103,10 @@ export default {
                 CognitoDomain: `${app.stage}-${app.name}-auth.auth.${app.region}.amazoncognito.com`,
                 CognitoUserPoolClientId: auth.userPoolClientId,
                 BucketName: bucket.bucketName,
-                TemplateTableWriteName: templateWriteTable.tableName,
-                TemplateTableReadName: templateReadTable.tableName,
+                TemplateTableName: templateTable.tableName,
+                ActiveTemplateTableName: activeTemplateTable.tableName,
                 QuizTableName: quizTable.tableName,
                 QrTableName: codeTable.tableName,
-                InstancesTableName: isntancesTable.tableName,
                 AnswerTableName: answerTable.tableName,
             }
 

@@ -13,7 +13,7 @@ import EditTemplate from "~/templates/EditTemplate";
 import { State } from "~/templates/reducer";
 import { updateTemplateSchema } from "~/templates/validation";
 import { authAction, loginRequiredLoader } from "~/auth.server";
-import { templateClient } from "~/db/client";
+import { templateRepository } from "~/db/client";
 
 export const meta: MetaFunction = () => {
   return [
@@ -23,7 +23,7 @@ export const meta: MetaFunction = () => {
 };
 
 const pathParamsSchema = z.object({
-  id: z.coerce.string(),
+  templateId: z.coerce.string(),
 });
 
 export const loader = async (args: LoaderFunctionArgs) => {
@@ -34,9 +34,9 @@ export const loader = async (args: LoaderFunctionArgs) => {
     throw error400("Invalid path params", formattedErrors);
   }
 
-  const template = await templateClient.getTemplatesByUserIdAndTemplateId(
+  const template = await templateRepository.getTemplatesByUserIdAndTemplateId(
     user.username,
-    params.data.id
+    params.data.templateId
   );
 
   return json({
@@ -112,12 +112,12 @@ const actionEdit = async (args: ActionFunctionArgs, form: FormData) => {
       throw error400("Invalid form input", formattedErrors);
     }
 
-    await templateClient.updateTemplate(
+    await templateRepository.updateTemplate(
       input.data,
       user.username,
-      params.data.id
+      params.data.templateId
     );
 
-    return redirect(`/templates`);
+    return redirect(`/template`);
   });
 };

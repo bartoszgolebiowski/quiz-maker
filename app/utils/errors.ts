@@ -62,3 +62,13 @@ export const error404 = (message: string, formattedErrors?: ReturnType<typeof fo
         status: 404,
     })
 }
+
+export const error409 = (message: string, formattedErrors?: ReturnType<typeof formatErrors>) => {
+    return json({
+        type: "error" as const,
+        message,
+        formattedErrors,
+    }, {
+        status: 409,
+    })
+}

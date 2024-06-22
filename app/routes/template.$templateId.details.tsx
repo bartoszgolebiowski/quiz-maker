@@ -5,7 +5,7 @@ import { error400, formatErrors } from "~/utils/errors";
 
 import DetailsTemplate from "~/templates/DetailsTemplate";
 import { loginRequiredLoader } from "~/auth.server";
-import { templateClient } from "~/db/client";
+import { templateRepository } from "~/db/client";
 
 export const meta: MetaFunction = () => {
   return [
@@ -15,7 +15,7 @@ export const meta: MetaFunction = () => {
 };
 
 const pathParamsSchema = z.object({
-  id: z.coerce.string(),
+  templateId: z.coerce.string(),
 });
 
 export const loader = async (args: LoaderFunctionArgs) => {
@@ -26,9 +26,9 @@ export const loader = async (args: LoaderFunctionArgs) => {
     throw error400("Invalid path params", formattedErrors);
   }
 
-  const template = await templateClient.getTemplatesByUserIdAndTemplateId(
+  const template = await templateRepository.getTemplatesByUserIdAndTemplateId(
     user.username,
-    params.data.id
+    params.data.templateId
   );
 
   return json({
