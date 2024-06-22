@@ -11,7 +11,7 @@ type Props = {
   Error400?: (props: { error: ErrorResponse }) => React.ReactElement;
 };
 
-export function GenericErrorBoundary(props: Props) {
+function GenericErrorBoundary(props: Props) {
   const { Error400 } = props;
   const error = useRouteError();
   const revalidator = useRevalidator();

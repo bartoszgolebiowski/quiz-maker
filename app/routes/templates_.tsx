@@ -1,5 +1,5 @@
 import { type LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import {
   Tooltip,
   TooltipContent,
@@ -19,10 +19,9 @@ import {
 import GenericErrorBoundary from "~/components/GenericErrorBoundary";
 import { Card, CardHeader, CardContent } from "~/components/ui/card";
 import { loginRequiredLoader } from "~/auth.server";
-import { QueryCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { unmarshall } from "@aws-sdk/util-dynamodb";
-import { env } from "~/env";
-import { templateListSchema } from "~/templates/validation";
+import { Button } from "~/components/ui/button";
+import Plus from "~/components/icons/Plus";
+import { templateClient } from "~/db/client";
 
 export const meta: MetaFunction = () => {
   return [
@@ -33,22 +32,9 @@ export const meta: MetaFunction = () => {
 
 export async function loader(args: LoaderFunctionArgs) {
   const user = await loginRequiredLoader(args);
-  const dynamodbClient = new DynamoDBClient({});
-  const command = new QueryCommand({
-    TableName: env.TABLE_NAME,
-    KeyConditionExpression: "userId = :pk",
-    ExpressionAttributeValues: {
-      ":pk": { S: user.sub },
-    },
-  });
-  const results = await dynamodbClient.send(command);
-  if (!results.Items) {
-    return { templates: [] };
-  }
+  const templates = await templateClient.getTemplatesByUserId(user.username);
   return {
-    templates: templateListSchema.parse(
-      results.Items.map((item) => unmarshall(item))
-    ),
+    templates,
   };
 }
 
@@ -61,6 +47,22 @@ export default function Index() {
           <h1 className="scroll-m-20 pb-2 text-3xl font-semibold tracking-tight first:mt-0">
             My templates
           </h1>
+          <div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button className="my-4" asChild>
+                    <Link to="/templates/create">
+                      <Plus />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create template</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -81,9 +83,7 @@ export default function Index() {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger tabIndex={-1}>
-                          <EditNavLink
-                            to={`/templates/${template.id}/edit`}
-                          />
+                          <EditNavLink to={`/templates/${template.templateId}/edit`} />
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Edit</p>
@@ -96,7 +96,7 @@ export default function Index() {
                       <Tooltip>
                         <TooltipTrigger tabIndex={-1}>
                           <InspectNavLink
-                            to={`/templates/${template.id}/details`}
+                            to={`/templates/${template.templateId}/details`}
                           />
                         </TooltipTrigger>
                         <TooltipContent>

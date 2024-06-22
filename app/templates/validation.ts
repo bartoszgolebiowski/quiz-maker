@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { reducer } from "./reducer";
+import { zfd } from "zod-form-data";
 
 export const quizContentSingleElementValidationSchema = z
     .object({
@@ -74,7 +75,7 @@ export const quizContentSchema = z.object({
 
 const templateSingleElementSchema = z.object({
     userId: z.string(),
-    id: z.string(),
+    templateId: z.string(),
     version: z.string(),
     title: z.string(),
     description: z.string(),
@@ -87,3 +88,24 @@ export const templateEditDetailsSchema = z.object({
     description: z.string(),
     data: z.object({ data: z.array(quizContentSingleElementSchema) }),
 })
+
+export const createTemplateSchema = zfd.formData({
+    title: zfd.text(
+        z
+            .string()
+            .min(1, { message: "Title is required" })
+            .max(255, { message: "Title is too long, max 255 characters" })
+    ),
+    description: zfd
+        .text(
+            z
+                .string()
+                .min(1, { message: "Description is required" })
+                .max(255, { message: "Description is too long, max 255 characters" })
+        )
+        .optional()
+        .default(""),
+    data: zfd.json(quizContentSchema),
+}); 
+
+export const updateTemplateSchema = createTemplateSchema
