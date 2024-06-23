@@ -1,7 +1,6 @@
 import React from "react";
 import { State, useManualWizardReducer } from "./reducer";
 
-
 import QuestionCard from "./QuestionCard";
 import QuestionCardErrors from "./QuestionCardErrors";
 import TemplateDetailsCard from "./TemplateDetailsCard";
@@ -25,12 +24,7 @@ type Props = {
 };
 
 const EditTemplate = (props: Props) => {
-  const {
-    children,
-    initial,
-    isSubmitting,
-    onSubmit,
-  } = props;
+  const { children, initial, isSubmitting, onSubmit } = props;
   const {
     state,
     appendQuestion,
@@ -47,40 +41,38 @@ const EditTemplate = (props: Props) => {
 
   return (
     <div className="pt-4">
-      <Card>
-        <CardHeader>
-          <h1 className="scroll-m-20 pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-            {children ? children : `Edit: ${state.title}`}
-          </h1>
-        </CardHeader>
-        <CardContent>
-          <TemplateDetailsCard
-            title={state.title}
-            description={state.description}
-            onChange={updateQuizMetaData}
-            disabled={isSubmitting}
-          >
-            <TemplateDetailsCardErrors title={state.title} />
-          </TemplateDetailsCard>
-          <div className="mt-4">
-            {state.data.map((question) => (
-              <QuestionCard
-                disabled={isSubmitting}
-                key={question.no}
-                question={question}
-                deleteQuestion={deleteQuestion}
-                updateQuestionText={updateQuestionText}
-                appendAnswer={appendAnswer}
-                deleteAnswer={deleteAnswer}
-                updateAnswer={updateAnswer}
-                updateCorrectAnswer={updateCorrectAnswer}
-              >
-                <QuestionCardErrors question={question} />
-              </QuestionCard>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <CardHeader>
+        <h1 className="scroll-m-20 pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+          {children ? children : `Edit: ${state.title}`}
+        </h1>
+      </CardHeader>
+      <CardContent>
+        <TemplateDetailsCard
+          title={state.title}
+          description={state.description}
+          onChange={updateQuizMetaData}
+          disabled={isSubmitting}
+        >
+          <TemplateDetailsCardErrors title={state.title} />
+        </TemplateDetailsCard>
+        <div className="mt-4">
+          {state.data.map((question) => (
+            <QuestionCard
+              disabled={isSubmitting}
+              key={question.no}
+              question={question}
+              deleteQuestion={deleteQuestion}
+              updateQuestionText={updateQuestionText}
+              appendAnswer={appendAnswer}
+              deleteAnswer={deleteAnswer}
+              updateAnswer={updateAnswer}
+              updateCorrectAnswer={updateCorrectAnswer}
+            >
+              <QuestionCardErrors question={question} />
+            </QuestionCard>
+          ))}
+        </div>
+      </CardContent>
       <div className="flex justify-center mt-4">
         <TooltipProvider>
           <Tooltip>

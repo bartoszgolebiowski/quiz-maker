@@ -1,6 +1,6 @@
 import { DynamoDBClient, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { TemplateRepository } from './template';
-import { error404, error500 } from "~/utils/errors";
+import { error404, error500, formatErrors } from "~/utils/errors";
 import { createQuizSchema, quizListSchema } from "~/quizzes/validation";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { v4 as uuidv4 } from "uuid";
@@ -16,7 +16,7 @@ export class QuizRepository {
         private codeRepository: CodeRepository,
     ) { }
 
-    async getQuizzesByUserId(userId: string) {
+    async getQuizzesByUserIdAndTemplateId(userId: string, templateId: string) {
         const command = new QueryCommand({
             TableName: this.tableName,
             KeyConditionExpression: "userId = :pk",
@@ -31,12 +31,23 @@ export class QuizRepository {
             console.error("DynamoDB client failed to send command", error)
             throw error500("DynamoDB client failed to send command");
         }
+
         if (!results.Items) {
             return []
         }
-        return quizListSchema.parse(
+
+        const result = quizListSchema.safeParse(
             results.Items.map((item) => unmarshall(item))
         )
+
+        if (!result.success) {
+            const formattedErrors = formatErrors(result.error);
+            console.error("Failed to parse quiz", formattedErrors);
+            throw error500("Failed to parse quiz", formattedErrors);
+        }
+
+        // todo: fix dynamodb primary key
+        return result.data.filter((quiz) => quiz.templateId === templateId);
     }
 
     async createQuiz(input: z.infer<typeof createQuizSchema>, userId: string) {
@@ -86,12 +97,21 @@ export class QuizRepository {
         }
 
         if (!results.Items || results.Items.length === 0) {
+            console.error("Quiz not found")
             throw error404("Quiz not found");
         }
 
-        return quizListSchema.parse(
+        const result = quizListSchema.safeParse(
             results.Items.map((item) => unmarshall(item))
-        )[0];
+        );
+
+        if (!result.success) {
+            const formattedErrors = formatErrors(result.error);
+            console.error("Failed to parse quiz", formattedErrors);
+            throw error500("Failed to parse quiz", formattedErrors);
+        }
+
+        return result.data[0];
     }
 
     async getQuizByCode(code: string) {
@@ -99,7 +119,7 @@ export class QuizRepository {
         const quiz = await this.getQuizById(quizId);
         return quiz;
     }
-    
+
     async expireQuiz(userId: string, quizId: string) {
         const command = new PutItemCommand({
             TableName: this.tableName,

@@ -1,5 +1,5 @@
 import { DynamoDBClient, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
-import { error404, error500 } from "~/utils/errors";
+import { error404, error500, formatErrors } from "~/utils/errors";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { codeSingleElementSchema } from "~/code/validation";
 
@@ -50,11 +50,17 @@ export class CodeRepository {
             throw error404("Code not found");
         }
 
-        const codeElement = codeSingleElementSchema.parse(
+        const result = codeSingleElementSchema.safeParse(
             unmarshall(results.Items[0])
         );
 
-        return codeElement.quizId;
+        if (!result.success) {
+            const formattedErrors = formatErrors(result.error);
+            console.error("Failed to parse quiz", formattedErrors);
+            throw error500("Failed to parse quiz", formattedErrors);
+        }
+
+        return result.data.quizId;
     }
 
 

@@ -1,5 +1,16 @@
-import { ActionFunctionArgs, redirect, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
-import { Link, Outlet, useLoaderData, useLocation, useParams } from "@remix-run/react";
+import {
+  ActionFunctionArgs,
+  redirect,
+  type LoaderFunctionArgs,
+  type MetaFunction,
+} from "@remix-run/node";
+import {
+  Link,
+  Outlet,
+  useLoaderData,
+  useLocation,
+  useParams,
+} from "@remix-run/react";
 import GenericErrorBoundary from "~/components/GenericErrorBoundary";
 import { authAction, loginRequiredLoader } from "~/auth.server";
 import { quizRepository, templateRepository } from "~/db/client";
@@ -27,6 +38,8 @@ import ExpandLink from "~/components/link/ExpandLink";
 import CreateReadingsFromTemplate from "~/quizzes/CreateReadingsFromTemplate";
 import { createQuizSchema } from "~/quizzes/validation";
 import { error401, formatErrors, error400 } from "~/utils/errors";
+import CollapseLink from "~/components/link/CollapseLink";
+import { isExpanded } from "~/utils/links";
 
 export const meta: MetaFunction = () => {
   return [
@@ -76,82 +89,94 @@ export default function Index() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Quizzies</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Quiz</TableHead>
-                  <TableHead className="text-right">Edit</TableHead>
-                  <TableHead className="text-right">Details</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.templates.map((template) => (
-                  <React.Fragment key={template.version}>
-                    <TableRow>
-                      <TableCell>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger tabIndex={-1}>
-                              <ExpandLink
-                                to={`/template/${template.templateId}/quiz`}
-                              />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Inspect</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </TableCell>
-                      <TableCell>{template.title}</TableCell>
-                      <TableCell>{template.description}</TableCell>
-                      <TableCell align="right">
-                        <CreateReadingsFromTemplate
-                          templateId={template.templateId}
-                          key={location.key}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <TooltipProvider>
-                          <Tooltip >
-                            <TooltipTrigger tabIndex={-1}>
-                              <EditNavLink
-                                to={`/template/${template.templateId}/edit`}
-                              />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Edit</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </TableCell>
-                      <TableCell align="right">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger tabIndex={-1}>
-                              <InspectNavLink
-                                to={`/template/${template.templateId}/details`}
-                              />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Inspect</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </TableCell>
-                    </TableRow>
-                    {params.templateId ? (
-                      <TableRow className="ml-12">
-                        <TableCell></TableCell>
-                        <TableCell colSpan={5}>{<Outlet />}</TableCell>
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Quizzies</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Quiz</TableHead>
+                    <TableHead className="text-right">Edit</TableHead>
+                    <TableHead className="text-right">Details</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.templates.map((template) => (
+                    <React.Fragment key={template.version}>
+                      <TableRow>
+                        <TableCell>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger tabIndex={-1}>
+                                {isExpanded(
+                                  location.pathname,
+                                  `/template/${template.templateId}/quiz`
+                                ) ? (
+                                  <CollapseLink to={`/template`} />
+                                ) : (
+                                  <ExpandLink
+                                    to={`/template/${template.templateId}/quiz`}
+                                  />
+                                )}
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Inspect</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableCell>
+                        <TableCell>{template.title}</TableCell>
+                        <TableCell>{template.description}</TableCell>
+                        <TableCell align="right">
+                          <CreateReadingsFromTemplate
+                            templateId={template.templateId}
+                            key={location.key}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger tabIndex={-1}>
+                                <EditNavLink
+                                  to={`/template/${template.templateId}/edit`}
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Edit</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableCell>
+                        <TableCell align="right">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger tabIndex={-1}>
+                                <InspectNavLink
+                                  to={`/template/${template.templateId}/details`}
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Inspect</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableCell>
                       </TableRow>
-                    ) : null}
-                  </React.Fragment>
-                ))}
-              </TableBody>
-            </Table>
+                      {params.templateId === template.templateId ? (
+                        <TableRow>
+                          <TableCell colSpan={6}>
+                            <Card>
+                              <Outlet />
+                            </Card>
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
+                    </React.Fragment>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
           </CardContent>
         </Card>
       </div>
@@ -187,6 +212,6 @@ const actionCreate = async (args: ActionFunctionArgs, data: FormData) => {
     }
 
     const quiz = await quizRepository.createQuiz(input.data, user.username);
-    return redirect(`/templat/${quiz.templateId}/quiz`);
+    return redirect(`/template/${quiz.templateId}/quiz`);
   });
 };

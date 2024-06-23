@@ -36,6 +36,7 @@ import {
   quizRepository,
   templateRepository,
 } from "~/db/client";
+import { answerSingleElementSchema } from "~/answer/validation";
 
 const pathParamsSchema = z.object({
   name: z
@@ -55,31 +56,12 @@ export const loader = async (args: LoaderFunctionArgs) => {
     throw error400("Invalid path params", formattedErrors);
   }
 
-  let quiz;
-  try {
-    quiz = await quizRepository.getQuizById(params.data.quizId);
-  } catch (error) {
-    throw error500("Failed to load quiz");
-  }
-  console.log({ quiz });
-  if (!quiz) {
-    throw error404("Quiz not found");
-  }
-
-  let template;
-  try {
-    template = await templateRepository.getTemplateByIdAndVersion(
-      quiz.userId,
-      quiz.templateId,
-      quiz.version
-    );
-  } catch (error) {
-    throw error500("Failed to load quiz template");
-  }
-
-  if (!template) {
-    throw error404("Quiz template not found");
-  }
+  const quiz = await quizRepository.getQuizById(params.data.quizId);
+  const template = await templateRepository.getTemplateByIdAndVersion(
+    quiz.userId,
+    quiz.templateId,
+    quiz.version
+  );
 
   if (quiz.done) {
     return redirect(`/quiz/${params.data.quizId}/expired`);
@@ -156,8 +138,6 @@ export default function Index() {
   );
 }
 
-const answerSchema = z.record(z.string());
-
 export const action = async (args: ActionFunctionArgs) => {
   const params = pathParamsSchema.safeParse(args.params);
   if (!params.success) {
@@ -167,42 +147,31 @@ export const action = async (args: ActionFunctionArgs) => {
 
   const form = await args.request.formData();
   const answers = Object.fromEntries(form.entries());
-  const input = answerSchema.safeParse(answers);
+  const input = answerSingleElementSchema
+    .pick({ answers: true })
+    .safeParse({ answers });
 
   if (!input.success) {
     const formattedErrors = formatErrors(input.error);
     return error400("Invalid form input", formattedErrors);
   }
 
-  let quiz;
-  try {
-    quiz = await quizRepository.getQuizById(params.data.quizId);
-  } catch (error) {
-    return error500("Failed to load quiz");
-  }
-
-  if (!quiz) {
-    return error404("Quiz not found");
-  }
+  const quiz = await quizRepository.getQuizById(params.data.quizId);
 
   if (quiz.done) {
     return error409("Quiz has been closed");
   }
 
-  try {
-    const answersId = await answerRepository.createAnswer(
-      input.data,
-      quiz.quizId,
-      quiz.templateId,
-      quiz.version,
-      quiz.userId,
-      params.data.name
-    );
-    return redirect(`/quiz/${params.data.quizId}/answers/${answersId}`);
-  } catch (error) {
-    console.error(error);
-    return error500("Failed to save answers");
-  }
+  const answersId = await answerRepository.createAnswer(
+    input.data.answers,
+    quiz.quizId,
+    quiz.templateId,
+    quiz.version,
+    quiz.userId,
+    params.data.name
+  );
+
+  return redirect(`/quiz/${params.data.quizId}/answers/${answersId}`);
 };
 
 export function ErrorBoundary() {

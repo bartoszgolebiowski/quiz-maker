@@ -1,15 +1,14 @@
 import { calculateScore } from "./score";
 
-const PERCENTAGE = 10;
-
 export const convertStatistics = (results: ReturnType<typeof calculateScore>[]) => {
     if (results.length === 0) return { average: 0, median: 0 }
-    const average = results.reduce((acc, result) => acc + result.correct, 0) / results.length
-    const median = results[Math.floor(results.length / 2)].correct
+
+    const average = results.reduce((acc, result) => acc + result.score, 0) / results.length
+    const median = results.sort((a, b) => a.score - b.score)[Math.floor(results.length / 2)].score
 
     return {
-        average: (average * PERCENTAGE).toFixed(2),
-        median: (median * PERCENTAGE).toFixed(2),
+        average: average.toFixed(2),
+        median: median.toFixed(2),
     }
 }
 

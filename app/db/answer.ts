@@ -1,7 +1,8 @@
-import { unmarshall } from '@aws-sdk/util-dynamodb';
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { DynamoDBClient, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
-import { error404, error500 } from "~/utils/errors";
+import { error404, error500, formatErrors } from "~/utils/errors";
 import { v4 as uuidv4 } from "uuid";
+import { answerListSchema, answerSingleElementSchema } from '~/answer/validation';
 
 export class AnswerRepository {
     constructor(
@@ -19,16 +20,28 @@ export class AnswerRepository {
             },
         });
 
-        let results;
+        let dynamodbResults;
         try {
-            results = await this.dynamodbClient.send(queryCommand);
+            dynamodbResults = await this.dynamodbClient.send(queryCommand);
         } catch (error) {
             console.error("DynamoDB client failed to send command", error)
             throw error500("DynamoDB client failed to send command");
         }
 
-        console.log(results.Items)
-        return results.Items;
+        if (!dynamodbResults.Items || dynamodbResults.Items.length === 0) {
+            throw error404("Answers not found");
+        }
+
+
+        const result = answerListSchema.safeParse(dynamodbResults.Items.map((item) => unmarshall(item)));
+
+        if (!result.success) {
+            const formattedErrors = formatErrors(result.error);
+            console.error("Failed to parse quiz", formattedErrors);
+            throw error500("Failed to parse quiz", formattedErrors);
+        }
+
+        return result.data
     }
 
     async createAnswer(answers: Record<string, string>, quizId: string, templateId: string, version: string, userId: string, studentName: string) {
@@ -36,7 +49,7 @@ export class AnswerRepository {
         const putItemCommand = new PutItemCommand({
             TableName: this.tableName,
             Item: {
-                answers: { "M": this.convertToDynamoDbMap(answers) },
+                answers: { "M": marshall(answers) },
                 studentName: { S: studentName },
                 answerId: { S: answerId },
                 quizId: { S: quizId },
@@ -53,14 +66,6 @@ export class AnswerRepository {
             console.error("DynamoDB client failed to send command", error)
             throw error500("DynamoDB client failed to send command");
         }
-    }
-
-    private convertToDynamoDbMap(record: Record<string, string>): Record<string, { S: string }> {
-        const dynamoDbMap: Record<string, { S: string }> = {};
-        for (const key in record) {
-            dynamoDbMap[key] = { S: record[key] };
-        }
-        return dynamoDbMap;
     }
 
     async getByAnswerId(answerId: string) {
@@ -82,9 +87,21 @@ export class AnswerRepository {
 
 
         if (!results.Items || results.Items.length === 0) {
-            throw error404("Quiz not found");
+            throw error404("Answer not found");
         }
 
-        return unmarshall(results.Items[0])
+        if (results.Items.length !== 1) {
+            throw error500("Multiple answers found for the same answerId");
+        }
+
+        const result = answerSingleElementSchema.safeParse(unmarshall(results.Items[0]));
+
+        if (!result.success) {
+            const formattedErrors = formatErrors(result.error);
+            console.error("Failed to parse asnwer", formattedErrors);
+            throw error500("Failed to parse asnwer", formattedErrors);
+        }
+
+        return result.data
     }
 }

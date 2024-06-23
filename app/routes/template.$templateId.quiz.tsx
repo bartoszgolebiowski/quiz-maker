@@ -31,13 +31,16 @@ import {
 } from "~/components/ui/tooltip";
 import GenericErrorBoundary from "~/components/GenericErrorBoundary";
 import { authAction, loginRequiredLoader } from "~/auth.server";
-import { error401, formatErrors, error400, error500 } from "~/utils/errors";
+import { error401, formatErrors, error400 } from "~/utils/errors";
 import { quizRepository } from "~/db/client";
-import { createQuizSchema, expireQuizSchema } from "~/quizzes/validation";
+import { expireQuizSchema } from "~/quizzes/validation";
 import ExpandLink from "~/components/link/ExpandLink";
 import DialogCode from "~/quizzes/DialogCode";
 import Clock from "~/components/icons/Clock";
 import Ok from "~/components/icons/Ok";
+import CollapseLink from "~/components/link/CollapseLink";
+import { isExpanded } from "~/utils/links";
+import { z } from "zod";
 
 export const meta: MetaFunction = () => {
   return [
@@ -46,18 +49,28 @@ export const meta: MetaFunction = () => {
   ];
 };
 
+const pathParamsSchema = z.object({
+  templateId: z.string(),
+});
+
 export const loader = async (args: LoaderFunctionArgs) => {
   const user = await loginRequiredLoader(args);
-  const [quizzes] = await Promise.all([
-    quizRepository.getQuizzesByUserId(user.username),
-  ]);
-
+  const params = pathParamsSchema.safeParse(args.params);
+  if (!params.success) {
+    const formattedErrors = formatErrors(params.error);
+    throw error400("Invalid path params", formattedErrors);
+  }
+  const quizzes = await quizRepository.getQuizzesByUserIdAndTemplateId(
+    user.username,
+    params.data.templateId
+  );
   return json({ quizzes });
 };
 
 export default function Index() {
   const data = useLoaderData<typeof loader>();
   const params = useParams<{ templateId: string; quizId: string }>();
+  const location = useLocation();
 
   return (
     <Table>
@@ -78,9 +91,18 @@ export default function Index() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger tabIndex={-1}>
-                      <ExpandLink
-                        to={`/template/${params.templateId}/quiz/${quiz.quizId}/answers`}
-                      />
+                      {isExpanded(
+                        location.pathname,
+                        `/template/${params.templateId}/quiz/${quiz.quizId}/answers`
+                      ) ? (
+                        <CollapseLink
+                          to={`/template/${params.templateId}/quiz`}
+                        />
+                      ) : (
+                        <ExpandLink
+                          to={`/template/${params.templateId}/quiz/${quiz.quizId}/answers`}
+                        />
+                      )}
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Inspect</p>
@@ -125,10 +147,11 @@ export default function Index() {
                 )}
               </TableCell>
             </TableRow>
-            {params.quizId ? (
-              <TableRow className="ml-12">
-                <TableCell></TableCell>
-                <TableCell colSpan={5}>{<Outlet />}</TableCell>
+            {params.quizId === quiz.quizId ? (
+              <TableRow>
+                <TableCell colSpan={6}>
+                  <Outlet />
+                </TableCell>
               </TableRow>
             ) : null}
           </>
@@ -164,12 +187,7 @@ const actionExpired = async (args: ActionFunctionArgs, data: FormData) => {
       return error400("Invalid form input", formattedErrors);
     }
 
-    try {
-      await quizRepository.expireQuiz(user.username, input.data.quizId);
-    } catch (error) {
-      console.error(error);
-      return error500("Failed to finish quiz");
-    }
+    await quizRepository.expireQuiz(user.username, input.data.quizId);
 
     return redirect(".");
   });

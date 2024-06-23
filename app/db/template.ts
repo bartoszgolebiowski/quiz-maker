@@ -4,7 +4,7 @@ import { unmarshall } from '@aws-sdk/util-dynamodb';
 import { z } from 'zod';
 import { v4 as uuidv4 } from "uuid";
 import { createTemplateSchema, templateEditDetailsSchema, templateListSchema, updateTemplateSchema } from '~/templates/validation';
-import { error404, error500 } from '~/utils/errors';
+import { error404, error500, formatErrors } from '~/utils/errors';
 
 export class TemplateRepository {
     constructor(
@@ -33,9 +33,18 @@ export class TemplateRepository {
         if (!results.Items) {
             return []
         }
-        return templateListSchema.parse(
+
+        const result = templateListSchema.safeParse(
             results.Items.map((item) => unmarshall(item))
         )
+
+        if (!result.success) {
+            const formattedErrors = formatErrors(result.error);
+            console.error("Failed to parse template", formattedErrors);
+            throw error500("Failed to parse template", formattedErrors);
+        }
+
+        return result.data
     }
 
     async getCurrentTemplateVersion(userId: string, templateId: string) {
@@ -86,14 +95,15 @@ export class TemplateRepository {
             throw error500("Failed to parse template");
         }
 
-        const template = templateEditDetailsSchema.parse(json);
+        const result = templateEditDetailsSchema.safeParse(json);
 
-        if (!template) {
-            console.error("Template not found")
-            throw error404("Template not found");
+        if (!result.success) {
+            const formattedErrors = formatErrors(result.error);
+            console.error("Failed to parse quiz", formattedErrors);
+            throw error500("Failed to parse quiz", formattedErrors);
         }
 
-        return template;
+        return result.data
     }
 
     async createTemplate(input: z.infer<typeof createTemplateSchema>, userId: string, templateId = uuidv4()) {
@@ -214,16 +224,11 @@ export class TemplateRepository {
     }
 
     async getTemplateByIdAndVersion(userId: string, templateId: string, version: string) {
-        console.log({
-            userId,
-            templateId,
-            version
-
-        })
-         const command = new GetObjectCommand({
-                Bucket: this.s3Bucket,
-                Key: `${userId}/templates/${templateId}.json`,
-            });
+        const command = new GetObjectCommand({
+            Bucket: this.s3Bucket,
+            Key: `${userId}/templates/${templateId}.json`,
+            VersionId: version,
+        });
         let response;
         try {
             response = await this.s3Client.send(command);
@@ -246,13 +251,14 @@ export class TemplateRepository {
             throw error500("Failed to parse template");
         }
 
-        const template = templateEditDetailsSchema.parse(json);
+        const result = templateEditDetailsSchema.safeParse(json);
 
-        if (!template) {
-            console.error("Template not found")
-            throw error404("Template not found");
+        if (!result.success) {
+            const formattedErrors = formatErrors(result.error);
+            console.error("Failed to parse quiz", formattedErrors);
+            throw error500("Failed to parse quiz", formattedErrors);
         }
 
-        return template;
+        return result.data;
     }
 }

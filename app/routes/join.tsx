@@ -18,9 +18,7 @@ import { quizRepository } from "~/db/client";
 import { joinQuizSchema } from "~/quizzes/validation";
 import {
   error400,
-  error404,
   error409,
-  error500,
   extractErrors,
   formatErrors,
 } from "~/utils/errors";
@@ -112,25 +110,11 @@ export const action = async (args: ActionFunctionArgs) => {
     return error400("Invalid path params", formattedErrors);
   }
 
-  try {
-    const quiz = await quizRepository.getQuizByCode(input.data.code);
+  const quiz = await quizRepository.getQuizByCode(input.data.code);
 
-    if (!quiz) {
-      return error404("Quiz not found", [
-        {
-          field: "code",
-          errors: ["Quiz with this code not found, please use another code"],
-        },
-      ]);
-    }
-
-    if (quiz.done) {
-      return error409("Quiz has been closed");
-    }
-
-    return redirect(encodeURI(`/quiz/${quiz.quizId}/name/${input.data.name}`));
-  } catch (error) {
-    console.error(error);
-    return error500("Something went wrong");
+  if (quiz.done) {
+    return error409("Quiz has been closed");
   }
+
+  return redirect(encodeURI(`/quiz/${quiz.quizId}/name/${input.data.name}`));
 };

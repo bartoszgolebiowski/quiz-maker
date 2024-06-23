@@ -1,8 +1,12 @@
 import { LoaderFunctionArgs, json } from "@remix-run/node";
-import { Outlet, useLoaderData } from "@remix-run/react";
+import {
+  Outlet,
+  useLoaderData,
+  useLocation,
+  useParams,
+} from "@remix-run/react";
 import { z } from "zod";
 import GenericErrorBoundary from "~/components/GenericErrorBoundary";
-import InspectNavLink from "~/components/link/InspectNavLink";
 import { Card, CardHeader, CardContent } from "~/components/ui/card";
 import {
   Table,
@@ -36,6 +40,9 @@ import {
   quizRepository,
   templateRepository,
 } from "~/db/client";
+import ExpandLink from "~/components/link/ExpandLink";
+import CollapseLink from "~/components/link/CollapseLink";
+import { isExpanded } from "~/utils/links";
 
 const pathParamsSchema = z.object({
   templateId: z.string(),
@@ -49,58 +56,42 @@ export const loader = async (args: LoaderFunctionArgs) => {
     throw error400("Invalid path params", formattedErrors);
   }
 
-  let answers, quiz;
-  try {
-    [answers, quiz] = await Promise.all([
-      answerRepository.getByQuizId(params.data.quizId),
-      quizRepository.getQuizById(params.data.quizId),
-    ]);
-  } catch (error) {
-    console.error(error);
-    throw error500("Failed to load answers or quiz instance");
-  }
+  const [answers, quiz] = await Promise.all([
+    answerRepository.getByQuizId(params.data.quizId),
+    quizRepository.getQuizById(params.data.quizId),
+  ]);
 
-  if (!quiz) {
-    throw error404("Instance not found");
-  }
+  const template = await templateRepository.getTemplateByIdAndVersion(
+    quiz.userId,
+    quiz.templateId,
+    quiz.version
+  );
 
-  let template;
-  try {
-    template = await templateRepository.getTemplateByIdAndVersion(
-      quiz.userId,
-      quiz.templateId,
-      quiz.version
-    );
-  } catch (error) {
-    console.error(error);
-    throw error500("Failed to load quiz template");
-  }
-
-  if (!template) {
-    throw error404("Template not found");
-  }
-
-  const content = template.data;
-  const answersWithScore = answers.map((answer) => {
-    return {
-      id: answer.id,
-      studentName: answer.studentName,
-      result: calculateScore(content, answer.answers as any),
-    };
-  });
+  const answersWithScore = answers.map((answer) => ({
+    answerId: answer.answerId,
+    studentName: answer.studentName,
+    result: calculateScore(template.data, answer.answers),
+  }));
 
   const summary = convertStatistics(answersWithScore.map((a) => a.result));
 
   return json({
-    answers: answersWithScore as any,
-    title: quiz.title,
     summary,
-    max: content.data.length,
+    answers: answersWithScore,
+    title: quiz.title,
+    max: template.data.data.length,
   });
 };
 
 export default function Index() {
   const data = useLoaderData<typeof loader>();
+  const location = useLocation();
+  const params = useParams<{
+    templateId: string;
+    quizId: string;
+    answerId: string;
+  }>();
+
   const [value, setValue] = React.useState([Math.round(data.max / 2)]);
   const handleChange = (value: number[]) => setValue(value);
 
@@ -137,48 +128,67 @@ export default function Index() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="text-left">Details</TableHead>
                   <TableHead>Student</TableHead>
                   <TableHead>Correct</TableHead>
                   <TableHead>Incorrect</TableHead>
                   <TableHead>Score</TableHead>
-                  <TableHead className="text-right">Details</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.answers.map((answer) => (
-                  <TableRow
-                    key={answer.id}
-                    className={clsx({
-                      "bg-green-100": answer.result.correct >= value.at(0)!,
-                      "bg-red-100": answer.result.correct < value.at(0)!,
-                    })}
-                  >
-                    <TableCell>{answer.studentName}</TableCell>
-                    <TableCell>{answer.result.correct}</TableCell>
-                    <TableCell>{answer.result.incorrect}</TableCell>
-                    <TableCell>
-                      {(answer.result.correct / answer.result.total) * 100}%
-                    </TableCell>
-                    <TableCell align="right">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger tabIndex={-1}>
-                            <InspectNavLink to={`answers/${answer.id}`} />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Inspect</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                  </TableRow>
+                  <>
+                    <TableRow
+                      key={answer.answerId}
+                      className={clsx({
+                        "bg-green-100": answer.result.correct >= value.at(0)!,
+                        "bg-red-100": answer.result.correct < value.at(0)!,
+                      })}
+                    >
+                      <TableCell align="left">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger tabIndex={-1}>
+                              {isExpanded(
+                                location.pathname,
+                                `/template/${params.templateId}/quiz/${params.quizId}/answers/${answer.answerId}`
+                              ) ? (
+                                <CollapseLink
+                                  to={`/template/${params.templateId}/quiz/${params.quizId}/answers`}
+                                />
+                              ) : (
+                                <ExpandLink
+                                  to={`/template/${params.templateId}/quiz/${params.quizId}/answers/${answer.answerId}`}
+                                />
+                              )}
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Inspect</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </TableCell>
+                      <TableCell>{answer.studentName}</TableCell>
+                      <TableCell>{answer.result.correct}</TableCell>
+                      <TableCell>{answer.result.incorrect}</TableCell>
+                      <TableCell>
+                        {(answer.result.correct / answer.result.total) * 100}%
+                      </TableCell>
+                    </TableRow>
+                    {params.answerId === answer.answerId ? (
+                      <TableRow>
+                        <TableCell colSpan={5}>
+                          <Outlet />
+                        </TableCell>
+                      </TableRow>
+                    ) : null}
+                  </>
                 ))}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
       </div>
-      <Outlet />
     </>
   );
 }
