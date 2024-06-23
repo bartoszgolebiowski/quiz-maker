@@ -3,7 +3,7 @@ import { useLoaderData } from "@remix-run/react";
 import { z } from "zod";
 import { error400, formatErrors } from "~/utils/errors";
 
-import DetailsTemplate from "~/templates/DetailsTemplate";
+import DetailsTemplate from "~/features/templates/DetailsTemplate";
 import { loginRequiredLoader } from "~/auth.server";
 import { templateRepository } from "~/db/client";
 
@@ -35,6 +35,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     title: template.title,
     description: template.description,
     data: template.data.data,
+    suggestions: null,
   });
 };
 

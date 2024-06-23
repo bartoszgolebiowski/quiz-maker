@@ -5,6 +5,7 @@ import { TemplateRepository } from "./template";
 import { env } from "~/env";
 import { CodeRepository } from './code';
 import { AnswerRepository } from './answer';
+import { PromptRepository } from './prompt';
 
 const dynamodbClient = new DynamoDBClient({});
 const s3Client = new S3Client({});
@@ -43,3 +44,10 @@ const answerRepository = new AnswerRepository(
 )
 
 export { answerRepository };
+
+const promptRepository = new PromptRepository(
+    env.PROMPT_TABLE_NAME,
+    dynamodbClient,
+)
+
+export { promptRepository };

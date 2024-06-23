@@ -84,6 +84,15 @@ export default {
                 },
             })
 
+            const promptTable = new Table(stack, "PromptTable", {
+                fields: {
+                    userId: "string",
+                    promptId: "string",
+                    prompt: "string",
+                },
+                primaryIndex: { partitionKey: "userId", sortKey: "promptId" },
+            });
+
             const bucket = new Bucket(stack, "bucket", {
                 cdk: {
                     bucket: {
@@ -93,8 +102,8 @@ export default {
             })
 
             const site = new RemixSite(stack, "site", {
-                bind: [auth, bucket, templateTable, activeTemplateTable, quizTable, codeTable, answerTable],
-                permissions: [bucket, templateTable, activeTemplateTable, quizTable, codeTable, answerTable]
+                bind: [auth, bucket, templateTable, activeTemplateTable, quizTable, codeTable, answerTable, promptTable],
+                permissions: [bucket, templateTable, activeTemplateTable, quizTable, codeTable, answerTable, promptTable]
             });
 
             const env = {
@@ -108,6 +117,7 @@ export default {
                 QuizTableName: quizTable.tableName,
                 QrTableName: codeTable.tableName,
                 AnswerTableName: answerTable.tableName,
+                PromptTableName: promptTable.tableName,
             }
 
             stack.addOutputs(env);

@@ -15,7 +15,7 @@ import InputControll from "~/components/input/InputControll";
 import { Button } from "~/components/ui/button";
 import { Card, CardHeader, CardContent } from "~/components/ui/card";
 import { quizRepository } from "~/db/client";
-import { joinQuizSchema } from "~/quizzes/validation";
+import { joinQuizSchema } from "~/features/quizzes/validation";
 import {
   error400,
   error409,

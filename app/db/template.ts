@@ -3,7 +3,7 @@ import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3
 import { unmarshall } from '@aws-sdk/util-dynamodb';
 import { z } from 'zod';
 import { v4 as uuidv4 } from "uuid";
-import { createTemplateSchema, templateEditDetailsSchema, templateListSchema, updateTemplateSchema } from '~/templates/validation';
+import { createTemplateSchema, templateEditDetailsSchema, templateListSchema, updateTemplateSchema } from '~/features/templates/validation';
 import { error404, error500, formatErrors } from '~/utils/errors';
 
 export class TemplateRepository {
@@ -106,7 +106,8 @@ export class TemplateRepository {
         return result.data
     }
 
-    async createTemplate(input: z.infer<typeof createTemplateSchema>, userId: string, templateId = uuidv4()) {
+    async createTemplate(input: z.infer<typeof createTemplateSchema>, userId: string) {
+        const templateId = uuidv4()
         const s3Command = new PutObjectCommand({
             Bucket: this.s3Bucket,
             Key: `${userId}/templates/${templateId}.json`,

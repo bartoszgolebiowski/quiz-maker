@@ -2,7 +2,7 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { DynamoDBClient, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { error404, error500, formatErrors } from "~/utils/errors";
 import { v4 as uuidv4 } from "uuid";
-import { answerListSchema, answerSingleElementSchema } from '~/answer/validation';
+import { answerListSchema, answerSingleElementSchema } from '~/features/answer/validation';
 
 export class AnswerRepository {
     constructor(

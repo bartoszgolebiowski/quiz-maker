@@ -1,7 +1,7 @@
 import { DynamoDBClient, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { error404, error500, formatErrors } from "~/utils/errors";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
-import { codeSingleElementSchema } from "~/code/validation";
+import { codeSingleElementSchema } from "~/features/code/validation";
 
 export class CodeRepository {
     constructor(

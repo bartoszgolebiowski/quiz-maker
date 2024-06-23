@@ -35,8 +35,8 @@ import {
 } from "~/components/ui/table";
 import React from "react";
 import ExpandLink from "~/components/link/ExpandLink";
-import CreateReadingsFromTemplate from "~/quizzes/CreateReadingsFromTemplate";
-import { createQuizSchema } from "~/quizzes/validation";
+import CreateReadingsFromTemplate from "~/features/quizzes/CreateReadingsFromTemplate";
+import { createQuizSchema } from "~/features/quizzes/validation";
 import { error401, formatErrors, error400 } from "~/utils/errors";
 import CollapseLink from "~/components/link/CollapseLink";
 import { isExpanded } from "~/utils/links";

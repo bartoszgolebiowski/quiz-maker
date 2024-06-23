@@ -30,13 +30,13 @@ import {
   extractErrors,
   formatErrors,
 } from "~/utils/errors";
-import { sortQuestions } from "~/quizzes/ordering";
+import { sortQuestions } from "~/features/quizzes/ordering";
 import {
   answerRepository,
   quizRepository,
   templateRepository,
 } from "~/db/client";
-import { answerSingleElementSchema } from "~/answer/validation";
+import { answerSingleElementSchema } from "~/features/answer/validation";
 
 const pathParamsSchema = z.object({
   name: z

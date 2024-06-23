@@ -2,7 +2,7 @@ import { LoaderFunctionArgs, json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import { Label } from "~/components/ui/label";
-import { calculateScore } from "~/quizzes/score";
+import { calculateScore } from "~/features/quizzes/score";
 import { z } from "zod";
 import { error400, extractErrors, formatErrors } from "~/utils/errors";
 import GenericErrorBoundary from "~/components/GenericErrorBoundary";

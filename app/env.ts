@@ -14,6 +14,8 @@ const envSchema = z.object({
     INSTANCE_TABLE_NAME: z.string(),
     ANSWER_TABLE_NAME: z.string(),
     ANSWER_ID_INDEX_NAME: z.string(),
+    PROMPT_TABLE_NAME: z.string(),
+    OPEN_AI_API_KEY: z.string(),
 });
 
 export const env = envSchema.parse(process.env);

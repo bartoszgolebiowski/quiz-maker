@@ -14,7 +14,7 @@ import {
   useRouteLoaderData,
 } from "@remix-run/react";
 import InspectNavLink from "~/components/link/InspectNavLink";
-import CreateReadingsFromTemplate from "~/quizzes/CreateReadingsFromTemplate";
+import CreateReadingsFromTemplate from "~/features/quizzes/CreateReadingsFromTemplate";
 import {
   Table,
   TableBody,
@@ -33,9 +33,9 @@ import GenericErrorBoundary from "~/components/GenericErrorBoundary";
 import { authAction, loginRequiredLoader } from "~/auth.server";
 import { error401, formatErrors, error400 } from "~/utils/errors";
 import { quizRepository } from "~/db/client";
-import { expireQuizSchema } from "~/quizzes/validation";
+import { expireQuizSchema } from "~/features/quizzes/validation";
 import ExpandLink from "~/components/link/ExpandLink";
-import DialogCode from "~/quizzes/DialogCode";
+import DialogCode from "~/features/quizzes/DialogCode";
 import Clock from "~/components/icons/Clock";
 import Ok from "~/components/icons/Ok";
 import CollapseLink from "~/components/link/CollapseLink";

@@ -29,8 +29,8 @@ import {
   extractErrors,
   formatErrors,
 } from "~/utils/errors";
-import { calculateScore } from "~/quizzes/score";
-import { convertStatistics } from "~/quizzes/statistics";
+import { calculateScore } from "~/features/quizzes/score";
+import { convertStatistics } from "~/features/quizzes/statistics";
 
 import React from "react";
 import { Slider } from "~/components/ui/slider";

@@ -1,7 +1,7 @@
 import { DynamoDBClient, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { TemplateRepository } from './template';
 import { error404, error500, formatErrors } from "~/utils/errors";
-import { createQuizSchema, quizListSchema } from "~/quizzes/validation";
+import { createQuizSchema, quizListSchema } from "~/features/quizzes/validation";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
